@@ -1,0 +1,27 @@
+#Test index of API
+curl -i http://localhost:5000/hawkeyes/api/v0.0.1
+
+#Test GET  (200 OK) method
+curl -i http://localhost:5000/hawkeyes/api/v0.0.1/cards
+curl -i http://localhost:5000/hawkeyes/api/v0.0.1/cards/2
+
+#Test POST (201 CREATED) method
+curl -i -H "Content-type: application/json" -X POST --data "{\"title\":\"Learn Flask\", \"description\":\"Learn Flask from tutorial\"}" http://localhost:5000/hawkeyes/api/v0.0.1/cards
+curl -i -H "Content-type: application/json" -X POST --data "{\"title\":\"Learn Spark\"}" http://localhost:5000/hawkeyes/api/v0.0.1/cards
+curl -i -H "Content-type: application/json" -X POST --data "{}" http://localhost:5000/hawkeyes/api/v0.0.1/cards
+
+#Test PUT method
+curl -i -H "Content-type: application/json" -X PUT -d "{\"done\":\"Learn Spark\"}"  http://localhost:5000/hawkeyes/api/v0.0.1/cards/2
+curl -i -H "Content-type: application/json" -X PUT -d "{\"title\":\"Learn Flask\", \"description\":\"Learn Flask from tutorial\", \"done\": true }"  http://localhost:5000/hawkeyes/api/v0.0.1/cards/2
+
+#Test DELETE method
+curl -i -X DELETE http://localhost:5000/hawkeyes/api/v0.0.1/cards/2
+
+
+#Test GET users
+curl -i http://localhost:5000/hawkeyes/api/v0.0.1/users/3
+
+
+#### Test with credentials#######
+curl -u tempo:pass -i http://localhost:5000/hawkeyes/api/v0.0.1/cards/
+
