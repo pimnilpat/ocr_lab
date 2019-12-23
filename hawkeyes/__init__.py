@@ -25,7 +25,8 @@ def create_hawkeye(config=None):
         DATABASE = os.path.join(app.instance_path, "api.sqlite"),   #DATABASE is the path where the SQLite database file will be saved
         UPLOAD_FOLDER = os.path.join(app.instance_path, "uploads"), #Upload folder
         MAX_CONTENT_LENGTH = 16 * 1024 * 1024,   #Define maximum file size upload   
-        ALLOWED_EXTENSIONS = ALLOWED_EXTENSIONS   
+        ALLOWED_EXTENSIONS = ALLOWED_EXTENSIONS,
+        JSONIFY_PRETTYPRINT_REGULAR = True
     )
     
     if config is None:
