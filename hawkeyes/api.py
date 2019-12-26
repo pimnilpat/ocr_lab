@@ -1,5 +1,8 @@
+import os
 from flask import Flask, Request, Response, jsonify, json, abort, make_response, request, url_for
 from flask_httpauth import HTTPBasicAuth
+from werkzeug import secure_filename
+#import unicodedata
 
 app = Flask(__name__)
 auth = HTTPBasicAuth()
@@ -277,27 +280,59 @@ class hawkeyes():
 
             return data
 
-        @app.route("/", methods=["GET", "POST"])
+        @app.route("/hawkeyes/api/v0.0.1/uploads", methods=["POST"])
         def upload_file():
+            
+            file = request.files["file"]
+            
+            data = {                   
+                "method": str(request.method) + " : " + str(request.url),
+                "file": str(request.files),
+                "filename": file.filename
+            }
+
             if request.method == "POST":
-                if file not in request.files:
-                    flash("No file part")
-                    return redirect(request.url)
+                if "file" not in request.files:
+                     data["error"]  = "The upload files not found"   
+                
 
-                file = request.files["file"]
-
-                if file.filename == ""
-                    flash("No select file")
-                    return redirect(request.url)
+                if file.filename == "": 
+                    data["error"]  = "The upload files not found" 
 
                 if file and allowed_file(file.filename):
-                    filename = secure_filename(file.filename)
+                    filename = file.filename
 
-                    file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+                    #filename = secure_filename(filename)                    
 
-                    return redirect(url_for())
+                    #file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+                    contents = ""
+                    with open(filename,"rb") as f:
+                        contents = f.read() 
+                    
+                    # with open(os.path.join(app.config["UPLOAD_FOLDER"], filename), "w", encoding="utf8") as f:
+                    #     f.write(contents)                    
+
+                    data["success"] = "Upload successfully " + str(app.config["UPLOAD_FOLDER"] + "\\" + filename)
+                else:
+                    data["error"] = "Files could not allowed"              
+
+            
+            resp = jsonify(data)
+            resp.status_code = 200
+                       
+            return resp
                 
         #UPLOAD FILE AREA
+
+        #READ AND WRITE FILE AREA
+        def read_file(file):
+            with open(file, encoding="utf8") as f:
+                contents = f.read()                
+
+        def write_file(file):
+            with open(filename, "w", encoding="utf8") as f:
+                f.write()
+        #READ AND WRITE FILE AREA
 
         
 

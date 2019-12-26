@@ -14,7 +14,7 @@ def create_hawkeye(config=None):
     #Or we can specific the static folder as below
     #app = Flask(__name__, static_folder="/path/folder_static")
 
-    ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])  #Allow extensions for file uploads
+    ALLOWED_EXTENSIONS = set(["png", "jpg", "jpeg", "gif", "txt"])  #Allow extensions for file uploads
     
     #set some default configuration    
     app.config.from_mapping(
