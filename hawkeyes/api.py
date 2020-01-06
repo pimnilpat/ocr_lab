@@ -185,6 +185,8 @@ class hawkeyes():
         #END DELETE METHOD
 
         #START ERROR HANDLER AREA
+        
+
         @app.errorhandler(404)
         def not_found(error):
 
@@ -197,8 +199,17 @@ class hawkeyes():
             resp.status_code = 404
             return resp
         #END ERROR HANDLER AREA
-       
 
+        @app.errorhandler(500)
+        def internal_error(err):
+            data = {
+                "error": "500 error",
+                "message": "Internal server error"
+            }      
+
+            resp = jsonify(data)
+            resp.status_code = 500
+            return resp
 
         #START AUTHENTICATION AND AUTHORIZATION AREA
         @app.route("/hawkeyes/api/v0.0.1/users/<string:user_id>", methods=["GET"])
@@ -272,67 +283,140 @@ class hawkeyes():
             return new_card
         #END UTILITIES FUNCTION AREA
 
+        #EXTRACT CARD AREA
+        @app.route("/hawkeyes/api/v0.0.1/cards/extract", methods=["POST"])
+        def extract_card():
+            if request.method == "POST":
+                input_name = "file" #The file name of the control file's input
+                file = request.files
 
-        #UPLOAD FILE AREA
-        def allowed_file(filename):
-            data = "." in filename and \
-                filename.rsplit(".", 1)[1].lower() in app.config["ALLOWED_EXTENSIONS"]
+                return_data, saved_path = save_file(file, input_name)
+
+            try:
+                resp = jsonify(return_data)
+                resp.status_code = return_data["status_code"]
+            except Exception as ex:
+                abort(500)
+
+            return resp
+        
+
+        #END EXTRACT CARD AREA
+
+
+        #UPLOAD FILE AREA        
+        @app.route("/hawkeyes/api/v0.0.1/uploads", methods=["POST"])
+        def upload_file():           
+           
+            if request.method == "POST":
+                input_name = "file" #The name of the control file's input                                 
+                
+                file = request.files         
+
+                
+                return_data, saved_path = save_file(file,input_name)                  
+               
+            
+            try:
+                resp = jsonify(return_data)
+                resp.status_code = return_data["status_code"]  
+            except Exception as ex:
+                abort(500)                    
+                       
+            return resp       
+
+
+        #END UPLOAD FILE AREA                
+
+        #SAVE AND DELETE FILE AREA
+        def save_file(file, input_name):
+            data = {
+                "status": True,
+                "message": "File has been save successfully",
+                "status_code": 201               
+            }
+
+            saved_path = None          
+            
+            allowed_infomation = allowed_file_information(file, input_name)           
+
+            if not allowed_infomation["status"]:
+                return allowed_infomation
+
+            allowed_extension = allowed_file_extension(file[input_name].filename)            
+            if not allowed_extension["status"]:
+                return  allowed_extension
+            
+            filename = file[input_name].filename
+            
+            try:
+                filename = secure_filename(filename)
+                filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)  
+                fsave = file[input_name].save(filepath)
+                    
+                data["message"] = "File has been save successfully " + str(app.config["UPLOAD_FOLDER"] + "\\" + filename) 
+                saved_path = str(app.config["UPLOAD_FOLDER"] + "\\" + filename)
+                
+            except Exception as ex:
+                data["message"] =  str(ex)   
+                data["status"] = False
+                data["status_code"] = 500     
+
+            return data, saved_path
+
+        def allowed_file_information(file, input_name):
+            data = {
+                "status": True,
+                "message": "The upload file are accepted",
+                "status_code": 202
+            }
+
+            try:
+                if input_name not in file:
+                    data["message"]  = "The upload files not found" 
+                    data["status"] = False
+                    data["status_code"] = 400                    
+                            
+                
+                if file[input_name].filename == "":
+                    data["message"]  = "The upload files not found" 
+                    data["status"] = False
+                    data["status_code"] = 400
+                    
+            
+            except Exception as ex:
+                data["message"]  = str(ex)
+                data["status"] = False  
+                data["status_code"] = 500  
+                abort(500) 
 
             return data
 
-        @app.route("/hawkeyes/api/v0.0.1/uploads", methods=["POST"])
-        def upload_file():
-            
-            file = request.files["file"]
-            
-            data = {                   
-                "method": str(request.method) + " : " + str(request.url),
-                "file": str(request.files),
-                "filename": file.filename
+        def allowed_file_extension(filename):
+            data = {
+                "status": True,
+                "message": "File type are allowed",
+                "status_code": 202
             }
 
-            if request.method == "POST":
-                if "file" not in request.files:
-                     data["error"]  = "The upload files not found"   
-                
-
-                if file.filename == "": 
-                    data["error"]  = "The upload files not found" 
-
-                if file and allowed_file(file.filename):
-                    filename = file.filename
-
-                    #filename = secure_filename(filename)                    
-
-                    #file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-                    contents = ""
-                    with open(filename,"rb") as f:
-                        contents = f.read() 
-                    
-                    # with open(os.path.join(app.config["UPLOAD_FOLDER"], filename), "w", encoding="utf8") as f:
-                    #     f.write(contents)                    
-
-                    data["success"] = "Upload successfully " + str(app.config["UPLOAD_FOLDER"] + "\\" + filename)
-                else:
-                    data["error"] = "Files could not allowed"              
-
+            try:
+                data["status"] = "." in filename and filename.rsplit(".", 1)[1].lower() in app.config["ALLOWED_EXTENSIONS"]
             
-            resp = jsonify(data)
-            resp.status_code = 200
-                       
-            return resp
-                
-        #UPLOAD FILE AREA
+                if not data["status"]:
+                    data["message"] = "The file alllow only " + repr(app.config["ALLOWED_EXTENSIONS"])
+                    data["status_code"] = 415 
+                                 
+                    
+            except Exception as ex:
+                data["message"] = str(ex)
+                data["status_code"] = 500
+                abort(500)
+            
+            return data
+        
+        #END SAVE AND DELETE FILE AREA
 
-        #READ AND WRITE FILE AREA
-        def read_file(file):
-            with open(file, encoding="utf8") as f:
-                contents = f.read()                
-
-        def write_file(file):
-            with open(filename, "w", encoding="utf8") as f:
-                f.write()
-        #READ AND WRITE FILE AREA
-
+        
+        
         
 

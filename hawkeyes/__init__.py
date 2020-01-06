@@ -4,7 +4,7 @@ from .api import hawkeyes
 
 from datetime import timedelta
 
-def create_hawkeye(config=None):
+def create_hawkeye(config=None):    
     
     #__name__ is the name of current module
     #instance_relative_config=True for tell app that configuration files are relative to instance folder, it can hold local data that shouldn’t be committed to version control, such as configuration secrets and the database file.

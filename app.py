@@ -3,5 +3,6 @@ from hawkeyes import create_hawkeye
 app = create_hawkeye()
 
 
- #if __name__ == "__main__":
-     #app.run(host="0.0.0.0", port=5005)
+if __name__ == "__main__":
+    
+    app.run(host="0.0.0.0", port=5005,debug=True)
