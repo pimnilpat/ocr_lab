@@ -2,6 +2,7 @@ import os
 from flask import Flask, Request, Response, jsonify, json, abort, make_response, request, url_for
 from flask_httpauth import HTTPBasicAuth
 from werkzeug import secure_filename
+from werkzeug.exceptions import  HTTPException
 #import unicodedata
 
 app = Flask(__name__)
@@ -35,6 +36,95 @@ class hawkeyes():
     
 
     def __init__(self, app):
+
+        #START ERROR HANDLER AREA
+        
+        #Send authentication error back to client 
+        @auth.error_handler
+        def unauthorized():
+            data = {               
+                "status": False,
+                "message": "Unauthorized access",
+                "status_code": 401      
+            }
+
+            resp = jsonify(data)
+            resp.status_code = 401
+
+            return resp
+        
+        @app.errorhandler(Exception)
+        def handle_exception(ex):
+
+            if isinstance(ex, HTTPException):
+
+                data = {
+                    "status": ex.name,                
+                    "status_code": ex.code,
+                    "message": ex.description
+                }
+                
+            else:                           
+                data = {
+                    "status": "Internal server error",               
+                    "status_code": 500,
+                    "message": str(ex)
+                }
+
+            resp= jsonify(data)
+            resp.status_code = data["status_code"]
+
+            return resp  
+
+        
+        #END ERROR HANDLER AREA
+
+
+        #START AUTHENTICATION AND AUTHORIZATION AREA
+        @app.route("/hawkeyes/api/v0.0.1/users/<string:user_id>", methods=["GET"])
+        def api_users(user_id):
+            users = {
+                "1": "john",
+                "2": "steve",
+                "3": "bill",
+                "4": "phillips",
+                "5": "bushes"
+            }
+
+            user = None
+
+            if user_id in users:
+                user = users[user_id]
+
+
+            if user == None:
+                abort(404)
+
+            data = {
+                "success": "Request success",
+                "user": users[user_id],
+                "lenuser": len(user),
+                "user": user,
+                "typeuser": str(type(user))
+            }
+
+            resp = jsonify(data)
+            resp.status_code = 200
+
+            return resp
+
+        @auth.get_password
+        def get_password(username):
+            users = [{
+
+            }]
+
+            if username == "tempo":
+                return "test"
+
+            return None       
+
+        #END AUTHENTICATION AND AUTHORIZATION AREA
     
 
         #START GET METHOD
@@ -183,92 +273,7 @@ class hawkeyes():
             return resp
 
         #END DELETE METHOD
-
-        #START ERROR HANDLER AREA
-        
-
-        @app.errorhandler(404)
-        def not_found(error):
-
-            data = {
-                "error": "404 error",
-                "message": "Not found : " + request.url
-            }
-
-            resp = jsonify(data)
-            resp.status_code = 404
-            return resp
-        #END ERROR HANDLER AREA
-
-        @app.errorhandler(500)
-        def internal_error(err):
-            data = {
-                "error": "500 error",
-                "message": "Internal server error"
-            }      
-
-            resp = jsonify(data)
-            resp.status_code = 500
-            return resp
-
-        #START AUTHENTICATION AND AUTHORIZATION AREA
-        @app.route("/hawkeyes/api/v0.0.1/users/<string:user_id>", methods=["GET"])
-        def api_users(user_id):
-            users = {
-                "1": "john",
-                "2": "steve",
-                "3": "bill",
-                "4": "phillips",
-                "5": "bushes"
-            }
-
-            user = None
-
-            if user_id in users:
-                user = users[user_id]
-
-
-            if user == None:
-                abort(404)
-
-            data = {
-                "success": "Request success",
-                "user": users[user_id],
-                "lenuser": len(user),
-                "user": user,
-                "typeuser": str(type(user))
-            }
-
-            resp = jsonify(data)
-            resp.status_code = 200
-
-            return resp
-
-        @auth.get_password
-        def get_password(username):
-            users = [{
-
-            }]
-
-            if username == "tempo":
-                return "test"
-
-            return None
-
-        #Send authentication error back to client 
-        @auth.error_handler
-        def unauthorized():
-            data = {
-                "error": "401 error",
-                "message": "Unauthorized access"
-            }
-
-            resp = jsonify(data)
-            resp.status_code = 401
-
-            return resp
-
-        #END AUTHENTICATION AND AUTHORIZATION AREA
+               
 
 
         #START UTILITIES FUNCTION AREA
@@ -292,11 +297,9 @@ class hawkeyes():
 
                 return_data, saved_path = save_file(file, input_name)
 
-            try:
-                resp = jsonify(return_data)
-                resp.status_code = return_data["status_code"]
-            except Exception as ex:
-                abort(500)
+            
+            resp = jsonify(return_data)
+            resp.status_code = return_data["status_code"]            
 
             return resp
         
@@ -314,14 +317,13 @@ class hawkeyes():
                 file = request.files         
 
                 
-                return_data, saved_path = save_file(file,input_name)                  
+                return_data, saved_path = save_file(file,input_name)                           
                
             
-            try:
-                resp = jsonify(return_data)
-                resp.status_code = return_data["status_code"]  
-            except Exception as ex:
-                abort(500)                    
+            
+            resp = jsonify(return_data)
+            resp.status_code = return_data["status_code"]  
+                           
                        
             return resp       
 
@@ -338,30 +340,26 @@ class hawkeyes():
 
             saved_path = None          
             
-            allowed_infomation = allowed_file_information(file, input_name)           
+            data = allowed_file_information(file, input_name)           
 
-            if not allowed_infomation["status"]:
-                return allowed_infomation
+            if not data["status"]:
+                return data, saved_path
 
-            allowed_extension = allowed_file_extension(file[input_name].filename)            
-            if not allowed_extension["status"]:
-                return  allowed_extension
+            data = allowed_file_extension(file[input_name].filename)            
+            
+            if not data["status"]:
+                return data, saved_path
             
             filename = file[input_name].filename
             
-            try:
-                filename = secure_filename(filename)
-                filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)  
-                fsave = file[input_name].save(filepath)
+            
+            filename = secure_filename(filename)
+            filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)  
+            fsave = file[input_name].save(filepath)
                     
-                data["message"] = "File has been save successfully " + str(app.config["UPLOAD_FOLDER"] + "\\" + filename) 
-                saved_path = str(app.config["UPLOAD_FOLDER"] + "\\" + filename)
+            data["message"] = "File has been save successfully " + " " + filename
+            saved_path = str(app.config["UPLOAD_FOLDER"] + "\\" + filename)
                 
-            except Exception as ex:
-                data["message"] =  str(ex)   
-                data["status"] = False
-                data["status_code"] = 500     
-
             return data, saved_path
 
         def allowed_file_information(file, input_name):
@@ -371,26 +369,20 @@ class hawkeyes():
                 "status_code": 202
             }
 
-            try:
-                if input_name not in file:
-                    data["message"]  = "The upload files not found" 
-                    data["status"] = False
-                    data["status_code"] = 400                    
+            
+            if input_name not in file:
+                data["message"]  = "The upload files not found" 
+                data["status"] = False
+                data["status_code"] = 400                    
                             
                 
-                if file[input_name].filename == "":
-                    data["message"]  = "The upload files not found" 
-                    data["status"] = False
-                    data["status_code"] = 400
-                    
-            
-            except Exception as ex:
-                data["message"]  = str(ex)
-                data["status"] = False  
-                data["status_code"] = 500  
-                abort(500) 
+            if file[input_name].filename == "":
+                data["message"]  = "The upload files not found" 
+                data["status"] = False
+                data["status_code"] = 400
 
-            return data
+            return data                        
+
 
         def allowed_file_extension(filename):
             data = {
@@ -399,20 +391,14 @@ class hawkeyes():
                 "status_code": 202
             }
 
-            try:
-                data["status"] = "." in filename and filename.rsplit(".", 1)[1].lower() in app.config["ALLOWED_EXTENSIONS"]
+            data["status"] = "." in filename and filename.rsplit(".", 1)[1].lower() in app.config["ALLOWED_EXTENSIONS"]
             
-                if not data["status"]:
-                    data["message"] = "The file alllow only " + repr(app.config["ALLOWED_EXTENSIONS"])
-                    data["status_code"] = 415 
-                                 
-                    
-            except Exception as ex:
-                data["message"] = str(ex)
-                data["status_code"] = 500
-                abort(500)
+            if not data["status"]:
+                data["message"] = "The file alllow only " + repr(app.config["ALLOWED_EXTENSIONS"])
+                data["status_code"] = 415 
+
+            return data   
             
-            return data
         
         #END SAVE AND DELETE FILE AREA
 

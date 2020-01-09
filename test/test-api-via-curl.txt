@@ -1,0 +1,45 @@
+### รูปแบบคำสั่ง #######
+ curl -H "Accept: application/json" \
+-H 'Content-Type: application/json' \
+-H 'Authorization: Bearer eJ0.....' \
+-d '{"username": "chai"}' \
+-X POST \
+https://api.github.com
+
+#Test index of API
+curl -i http://localhost:5000/hawkeyes/api/v0.0.1
+
+#Test GET  (200 OK) method
+curl -i -u tempo:test http://localhost:5000/hawkeyes/api/v0.0.1/cards
+curl -i http://localhost:5000/hawkeyes/api/v0.0.1/cards/2
+
+#Test POST (201 CREATED) method
+curl -i -H "Content-type: application/json" -X POST --data "{\"title\":\"Learn Flask\", \"description\":\"Learn Flask from tutorial\"}" http://localhost:5000/hawkeyes/api/v0.0.1/cards
+curl -i -H "Content-type: application/json" -X POST --data "{\"title\":\"Learn Spark\"}" http://localhost:5000/hawkeyes/api/v0.0.1/cards
+curl -i -H "Content-type: application/json" -X POST --data "{}" http://localhost:5000/hawkeyes/api/v0.0.1/cards
+
+#Test PUT method
+curl -i -H "Content-type: application/json" -X PUT -d "{\"done\":\"Learn Spark\"}"  http://localhost:5000/hawkeyes/api/v0.0.1/cards/2
+curl -i -H "Content-type: application/json" -X PUT -d "{\"title\":\"Learn Flask\", \"description\":\"Learn Flask from tutorial\", \"done\": true }"  http://localhost:5000/hawkeyes/api/v0.0.1/cards/2
+
+#Test DELETE method
+curl -i -X DELETE http://localhost:5000/hawkeyes/api/v0.0.1/cards/2
+
+
+#Test GET users
+curl -i http://localhost:5000/hawkeyes/api/v0.0.1/users/3
+
+
+#### Test with credentials#######
+curl -u tempo:test -i http://localhost:5000/hawkeyes/api/v0.0.1/cards python -m json.tool
+
+## Test with upload with single file #########
+
+
+## Test with upload  file ##########
+curl -i   -H "Content-type:application/x-www-form" -X POST -F "file=@D:/TestFolder/Images/BusinessCards/Business_Cards_191022_0001.jpg" http://localhost:5000/hawkeyes/api/v0.0.1/uploads
+
+
+## Test extract data from the upload file ##
+curl -i H "Content-type:application/x-www-form" -X POST -F "@D:/TestFolder/Images/BusinessCards/Business_Cards_191022_0001.jpg" http:/localhost:5000/hawkeyes/api/v0.0.1/cards/extract
+
